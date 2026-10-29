@@ -42,14 +42,18 @@ Redmi K50 / 12GB / Android 17 实测：**19.5 tok/s 生成，60 tok/s prompt**�
 curl -L -o ~/LFM3-1.7B-Q4_K_M.gguf \
   "https://modelscope.cn/models/LiquidAI/LFM3-1.7B-GGUF/resolve/master/LFM3-1.7B-Q4_K_M.gguf"
 
-# 2. 二进制（从 Release 下载 zip 后解压到 ~/lfm3）
-#    不要放在 /sdcard，原因见 docs/PERFORMANCE.md「坑 1」
+# 2. 二进制 + 启动脚本（zip 里已带好，扁平解压到 ~/lfm3）
+#    不要放 /sdcard，原因见 docs/PERFORMANCE.md「坑 1」
 mkdir -p ~/lfm3 && cd ~/lfm3
-# 把 release 里的 lfm3-android-arm64.zip 解压到这里
+curl -L -o lfm3.zip \
+  https://github.com/AIR-pixel/lfm3-android/releases/download/v0.1.0/lfm3-android-arm64.zip
+unzip -o lfm3.zip     # 没有 unzip 先 pkg install unzip
 
 # 3. 跑
-bash ~/lfm3/termux/start-server.sh ~/LFM3-1.7B-Q4_K_M.gguf
+bash ~/lfm3/start-server.sh
 ```
+
+脚本默认模型路径是 `~/LFM3-1.7B-Q4_K_M.gguf`，放在别处就传参：`bash ~/lfm3/start-server.sh /path/to/model.gguf [上下文] [线程数]`。
 
 然后手机浏览器打开 **`http://127.0.0.1:8080`** —— 直接就是聊天界面，不用装 App，不用 `file://`。
 
@@ -64,7 +68,7 @@ app/lfm3-chat.html        聊天页源码（流式输出、思考折叠、tok/s�
 app/chat_page.h           上面那个页面的 C++ 原始字符串常量版（给补丁用）
 patches/                  把聊天页塞进 llama-server 的改法
 scripts/build-android.sh  NDK 交叉编译脚本
-termux/start-server.sh    起 HTTP 服务 + 内置聊天页
+termux/start-server.sh    起 HTTP 服务 + 内置聊天页（release zip 里也带了一份）
 termux/start-chat.sh      纯终端对话
 docs/BUILD.md             构建细节与踩坑
 docs/PERFORMANCE.md       实测性能、线程数对比、两个致命坑
