@@ -1,0 +1,16 @@
+# 构建产物
+build/
+build-android/
+bin/
+*.so
+llama-cli
+llama-server
+llama-bench
+
+# 模型权重（体积大，不入库）
+*.gguf
+*.safetensors
+
+# 桌面端残留
+.DS_Store
+Thumbs.db
