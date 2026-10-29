@@ -1,11 +1,11 @@
+// 由 scripts/gen-chat-page.py 从 app/lfm3-chat.html 生成，请勿手改
 // 内嵌的本地聊天页（由 tools/server 的 "/" 路由直接返回）
-// 源文件: lfm3/lfm3-chat.html，改页面内容需同步这里并重编
 static const char * CHAT_PAGE_HTML = R"LFMPAGE(<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>LFM3 · 本机</title>
+<title>本机模型</title>
 <style>
   :root{
     --bg:#15161a; --panel:#1d1f24; --line:#2b2e35;
@@ -27,10 +27,11 @@ static const char * CHAT_PAGE_HTML = R"LFMPAGE(<!DOCTYPE html>
     padding:12px 16px;border-bottom:1px solid var(--line);
     font-size:13px;color:var(--dim);flex:0 0 auto;
   }
-  .dot{width:7px;height:7px;border-radius:50%;background:#5a5f68}
+  .dot{width:7px;height:7px;border-radius:50%;background:#5a5f68;flex:0 0 auto}
   .dot.on{background:#5f9e6a}
   .dot.off{background:#a34a3a}
-  #stat{margin-left:auto;font-variant-numeric:tabular-nums}
+  #name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  #stat{flex:0 0 auto;margin-left:auto;font-variant-numeric:tabular-nums}
   #log{flex:1 1 auto;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
   .msg{max-width:88%;white-space:pre-wrap;word-break:break-word}
   .msg.u{align-self:flex-end;background:var(--user);padding:10px 14px;border-radius:14px 14px 3px 14px}
@@ -57,7 +58,7 @@ static const char * CHAT_PAGE_HTML = R"LFMPAGE(<!DOCTYPE html>
 <body>
 <header>
   <span class="dot" id="dot"></span>
-  <span>LFM3-1.7B · 本机</span>
+  <span id="name">本机模型</span>
   <span id="stat">未连接</span>
 </header>
 <div id="log"><div class="empty" id="empty">本机推理 · 不联网<br>直接输入问题开始</div></div>
@@ -73,7 +74,7 @@ static const char * CHAT_PAGE_HTML = R"LFMPAGE(<!DOCTYPE html>
 const API = location.protocol === 'http:' ? '' : 'http://127.0.0.1:8080';
 const log=document.getElementById('log'), inp=document.getElementById('inp');
 const sendBtn=document.getElementById('send'), stat=document.getElementById('stat');
-const dot=document.getElementById('dot');
+const dot=document.getElementById('dot'), nameEl=document.getElementById('name');
 let history=[], busy=false;
 
 const KEY='lfm3-chat-v1';
@@ -93,12 +94,25 @@ function addMsg(role,content,think,save=true){
 }
 function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(history)); }catch(e){} }
 
+// llama-server 的 /v1/models 里 id 就是当前加载的模型路径，用它显示换成了哪个模型
+function shortName(id){
+  const base=String(id).split(/[\\/]/).pop().replace(/\.gguf$/i,'');
+  return base.length>34 ? base.slice(0,33)+'…' : base;
+}
 async function ping(){
   try{
     const r=await fetch(API+'/v1/models',{signal:AbortSignal.timeout(2500)});
-    dot.className='dot '+(r.ok?'on':'off');
-    stat.textContent=r.ok?'已连接':'服务未响应';
-  }catch(e){ dot.className='dot off'; stat.textContent='未连接'; }
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    const id=j&&j.data&&j.data[0]&&j.data[0].id;
+    if(id){
+      const n=shortName(id);
+      nameEl.textContent=n; nameEl.title=id; document.title=n;
+    }
+    dot.className='dot on'; stat.textContent='已连接';
+  }catch(e){
+    dot.className='dot off'; stat.textContent='未连接';
+  }
 }
 ping(); setInterval(ping,8000);
 
