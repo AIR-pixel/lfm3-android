@@ -175,6 +175,10 @@ lfm3_parse_args() {
                 break
                 ;;
             *)
+                # v0.1.x 是位置参数式，顺手给个迁移提示
+                if [ -f "$1" ]; then
+                    lfm3_die "模型要用 -m 指定: -m $1"
+                fi
                 lfm3_die "未知参数: $1（-h 查看帮助）"
                 ;;
         esac
