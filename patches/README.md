@@ -21,20 +21,16 @@ static const char * CHAT_PAGE_HTML = R"LFMPAGE(<!DOCTYPE html>
 )LFMPAGE";
 ```
 
-改页面内容的流程：改 `../app/lfm3-chat.html` → 重新生成 `chat_page.h` → 重编。别直接改 `chat_page.h`，两份会漂移。
+改页面内容的流程：改 `../app/lfm3-chat.html` → 重新生成 `chat_page.h` → 重编。别直接改 `chat_page.h`，两份会漂移，而真正编进二进制的是后者。
 
-重新生成：
+重新生成（仓库自带脚本）：
 
 ```bash
-python - <<'PY'
-src = open('app/lfm3-chat.html', encoding='utf-8').read()
-assert ')LFMPAGE"' not in src, '页面里出现了与分隔符冲突的字符串'
-out = ('// 内嵌的本地聊天页（由 tools/server 的 "/" 路由直接返回）\n'
-       '// 源文件: app/lfm3-chat.html，改页面内容需同步这里并重编\n'
-       'static const char * CHAT_PAGE_HTML = R"LFMPAGE(' + src + ')LFMPAGE";\n')
-open('app/chat_page.h', 'w', encoding='utf-8', newline='\n').write(out)
-PY
+python3 scripts/gen-chat-page.py           # app/lfm3-chat.html -> app/chat_page.h
+python3 scripts/gen-chat-page.py --check   # 只校验是否同步，已过期返回 1
 ```
+
+脚本会检查页面里有没有和分隔符冲突的 `)LFMPAGE"`，并强制写 LF 换行。
 
 ## 改动 2：注册路由
 
@@ -93,5 +89,5 @@ llama-server 的 CORS 是**回显 Origin**（不是发 `*`）。`file://` 页面
 
 ```bash
 curl -s -o /dev/null -w '%{http_code} %{size_download}\n' http://127.0.0.1:8080/
-# 期望：200 7431 左右
+# 期望：200 加上 app/lfm3-chat.html 的字节数
 ```
